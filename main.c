@@ -141,26 +141,26 @@ int main(int argc, char *argv[])
     }
 
     /* Accept Filter */
-// #ifdef SO_ACCEPTFILTER
-//     {
-//         struct accept_filter_arg afa;
-//         bzero(&afa, sizeof(afa)); 
-//         strcpy(afa.af_name, "httpready"); 
-//         setsockopt(sockfd, SOL_SOCKET, SO_ACCEPTFILTER, &afa, sizeof(afa));
-//     }
-// #elif TCP_DEFER_ACCEPT
-//     {
-//         int optval = 1;
-//         setsockopt(sockfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &optval, sizeof(optval));
-//     }
-// #endif
+#ifdef SO_ACCEPTFILTER
+    {
+        struct accept_filter_arg afa;
+        bzero(&afa, sizeof(afa));
+        strcpy(afa.af_name, "httpready");
+        setsockopt(sockfd, SOL_SOCKET, SO_ACCEPTFILTER, &afa, sizeof(afa));
+    }
+#elif TCP_DEFER_ACCEPT
+    {
+        int optval = 1;
+        setsockopt(sockfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &optval, sizeof(optval));
+    }
+#endif
 
     /* TODO: Daemonize */
     setsid();
 
     /*-
      * シグナルの設定
-     * https://www.jpcert.or.jp/sc-rules/c-sig01-c.html 
+     * https://www.jpcert.or.jp/sc-rules/c-sig01-c.html
      */
     {
         struct sigaction act;
@@ -184,11 +184,11 @@ int main(int argc, char *argv[])
         connection_fd = accept(sockfd, &client_addr, &client_addr_size);
         if (connection_fd < 0) {
             if (errno == EINTR || errno == EAGAIN || errno == ECONNABORTED)
-				continue;
-                // EPROTO continue
+                continue;
+            // EPROTO continue
             SYSLOG(LOG_ERR, "accept: %m");
-			perror("accept");
-			exit(1);
+            perror("accept");
+            exit(EXIT_FAILURE);
         }
 
         pid = fork();
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
         }
         close(connection_fd);
     }
-    
+
     return 0;
 }
 
@@ -244,10 +244,10 @@ void sigchld (int n)
 
         if (pid < 0) {
             if (errno == EINTR || errno == EAGAIN)
-				continue;
+                continue;
             if (errno != ECHILD) {
                 SYSLOG(LOG_ERR, "waitpid: %m");
-			    perror("waitpid");
+                perror("waitpid");
             }
             break;
         }
